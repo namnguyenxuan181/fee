@@ -1,0 +1,37 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <Languages>
+        <language minSize="110" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="2">
+            <item index="0" class="java.lang.String" itemvalue="pyspark" />
+            <item index="1" class="java.lang.String" itemvalue="dateutil" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="pyspark.sql.functions.col" />
+          <option value="pyspark.sql.functions.desc" />
+          <option value="pyspark.sql.functions.row_number" />
+          <option value="pyspark.sql.functions.sum" />
+          <option value="pyspark.sql.functions.min" />
+          <option value="pyspark.sql.functions.lit" />
+          <option value="pyspark.sql.functions.count" />
+          <option value="pyspark.sql.functions.collect_set" />
+          <option value="pyspark.sql.functions.collect_list" />
+          <option value="pyspark.sql.functions.max" />
+          <option value="pyspark.sql.functions.upper" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
