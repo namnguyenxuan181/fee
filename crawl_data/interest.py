@@ -12,6 +12,7 @@ def get_page_content(url):
 
 
 def interest_cleaner(row: str):
+    row = str(row)
     if row == "-":
         return None
     row = row.replace("%", "").replace(",", ".")
@@ -61,27 +62,35 @@ def get_vcb_interest():
     vcb_interest_df["tenor"], vcb_interest_df["unit"] = zip(*vcb_interest_df["tenor"].apply(tenor_cleaner))
     vcb_interest_df["bank_issue"], vcb_interest_df["type"] = "vcb", "offline"
     vcb_interest_df["interest"] = vcb_interest_df["interest"].apply(interest_cleaner)
-    vcb_interest_df['from_mount'], vcb_interest_df['to_amount'] = add_from_amount_to_amount()
+    vcb_interest_df['from_amount'], vcb_interest_df['to_amount'] = add_from_amount_to_amount()
+    vcb_interest_df['is_default'] = True
     return vcb_interest_df
 
 
 # PVCOM BANK
 def get_pvc_interest():
-    pv_url = "https://www.pvcombank.com.vn/bieu-lai-suat.html"
-    pv_page = get_page_content(pv_url)
-    pv_interest_table = pv_page.findAll("div", id="frontend-content")
-    interest_line = pv_interest_table[0].findAll("tr")
-    pv_interest = []
-    for i in interest_line[1:]:
-        tmp = i.text.split("\n")
-        pv_interest.append([tmp[1], tmp[2]])
+    res = requests.get("https://www.pvcombank.com.vn//api/interest-rate")
+    pvc_interest_table = pd.DataFrame(res.json())
+    pvc_interest_table = pvc_interest_table.fillna(0).astype({"INTERESTE": "int64"})
+    pvc_interest_table = pvc_interest_table.rename(
+        columns={"INTERESTE": "interest", "TERM": "tenor", "CHANNEL": "type"}
+    )
+    pvc_interest_table["tenor"], pvc_interest_table["unit"] = zip(*pvc_interest_table["tenor"].apply(tenor_cleaner))
+    pvc_interest_table["interest"] = pvc_interest_table["interest"].apply(interest_cleaner)
+    select_cols = ["tenor", "unit", "interest", "type"]
+    product_name = "Tiết kiệm Đại chúng trả lãi cuối kỳ"
+    offline = "TELLER"
+    online = "EBANK"
+    pvc_interest_df = pvc_interest_table[
+        (pvc_interest_table["CURRENCY"] == "VND") & (pvc_interest_table["PRODUCTNAME"] == product_name)
+        & ((pvc_interest_table["type"] == offline) | (pvc_interest_table["type"] == online))
+        ][select_cols]
 
-    pv_interest_df = pd.DataFrame(pv_interest, columns=["tenor", "interest"])
-    pv_interest_df["tenor"], pv_interest_df["unit"] = zip(*pv_interest_df["tenor"].apply(tenor_cleaner))
-
-    pv_interest_df["bank_issue"], pv_interest_df["type"] = "pvc", "offline"
-    pv_interest_df["interest"] = pv_interest_df["interest"].apply(interest_cleaner)
-    return pv_interest_df
+    pvc_interest_df["bank_issue"] = "pvc"
+    pvc_interest_df = pvc_interest_df.replace({online: "online", offline: "offline"})
+    pvc_interest_df['from_amount'], pvc_interest_df['to_amount'] = add_from_amount_to_amount()
+    pvc_interest_df['is_default'] = True
+    return pvc_interest_df
 
 
 # SCB
@@ -114,6 +123,9 @@ def get_scb_interest():
     scb_offline_interest_df["interest"] = scb_offline_interest_df["interest"].apply(interest_cleaner)
     scb_offline_interest_df["tenor"] = scb_offline_interest_df["tenor"].astype("int")
     scb_interest_df = scb_online_interest_df.append(scb_offline_interest_df, ignore_index=True)
+    scb_interest_df['from_amount'], scb_interest_df['to_amount'] = add_from_amount_to_amount()
+    scb_interest_df['is_default'] = True
+
     return scb_interest_df
 
 
@@ -130,6 +142,9 @@ def get_bid_interest():
     bidv_interest["tenor"], bidv_interest["unit"] = zip(*bidv_interest["tenor"].apply(tenor_cleaner))
     bidv_interest["interest"] = bidv_interest["interest"].apply(interest_cleaner)
     bidv_interest["type"], bidv_interest["bank_issue"] = "offline", "bidv"
+    bidv_interest['from_amount'], bidv_interest['to_amount'] = add_from_amount_to_amount()
+    bidv_interest['is_default'] = True
+
     return bidv_interest
 
 
@@ -144,6 +159,9 @@ def get_donga_interest():
     donga_interest_df["tenor"], donga_interest_df["unit"] = zip(*donga_interest_df["tenor"].apply(tenor_cleaner))
     donga_interest_df["interest"] = donga_interest_df["interest"].apply(interest_cleaner)
     donga_interest_df["bank_issue"], donga_interest_df["type"] = "donga", "offline"
+    donga_interest_df['from_amount'], donga_interest_df['to_amount'] = add_from_amount_to_amount()
+    donga_interest_df['is_default'] = True
+
     return donga_interest_df
 
 
@@ -156,6 +174,9 @@ def get_nama_interest():
     nama_interest_df["tenor"], nama_interest_df["unit"] = zip(*nama_interest_df["tenor"].apply(tenor_cleaner))
     nama_interest_df["interest"] = nama_interest_df["interest"].apply(interest_cleaner)
     nama_interest_df["bank_issue"], nama_interest_df["type"] = "nama", "offline"
+    nama_interest_df['from_amount'], nama_interest_df['to_amount'] = add_from_amount_to_amount()
+    nama_interest_df['is_default'] = True
+
     return nama_interest_df
 
 
@@ -167,23 +188,24 @@ def get_vib_interest():
     vib_interest_table = vib_interest_table.rename(
         columns={"balance": "to_amount", "actualRate": "interest", "term": "tenor", "productType": "type"}
     )
+    vib_interest_table = vib_interest_table[
+        (vib_interest_table["ccy"] == "VND")
+        & ((vib_interest_table["type"] == "TDE") | (vib_interest_table["type"] == "524"))]
     vib_interest_table["tenor"], vib_interest_table["unit"] = zip(*vib_interest_table["tenor"].apply(tenor_cleaner))
     vib_interest_table["interest"] = vib_interest_table["interest"].apply(interest_cleaner)
     select_cols = ["tenor", "unit", "interest", "to_amount", "type"]
     w = Window.partitionBy("tenor").orderBy("to_amount")
-    vib_interest_df = spark.createDataFrame(
-        vib_interest_table[
-            (vib_interest_table["ccy"] == "VND")
-            & ((vib_interest_table["type"] == "TDE") | (vib_interest_table["type"] == "524"))
-        ]
-    ).select(select_cols)
+    vib_interest_df = spark.createDataFrame(vib_interest_table[select_cols])
     vib_interest_df = (
-        vib_interest_df.withColumn("from_amount", F.lag("from_amount").over(w))
-        .withColumn("from_amount", F.lag("from_amount").over(w))
+        vib_interest_df.withColumn("from_amount", F.lag("to_amount").over(w))
+        .withColumn("from_amount", F.col("from_amount") + 1).fillna(0, subset=['from_amount'])
         .withColumn(
             "type", F.when(F.col("type") == "TDE", "offline").otherwise("online")
         )
         .withColumn("bank_issue", F.lit("VIB"))
+        .withColumn(
+            "is_default", F.when(F.col("from_amount") == 0, True).otherwise(False)
+        )
         .toPandas()
     )
     return vib_interest_df
@@ -191,16 +213,15 @@ def get_vib_interest():
 
 if __name__ == "__main__":
     print("start")
-    get_vcb_interest()
-    # run_date = RunDate(datetime.datetime.today())
-    # interest_df = (
-    #     get_vcb_interest()
-    #     .append(get_pvc_interest(), ignore_index=True)
-    #     .append(get_bid_interest(), ignore_index=True)
-    #     .append(get_scb_interest(), ignore_index=True)
-    #     .append(get_donga_interest(), ignore_index=True)
-    #     .append(get_nama_interest(), ignore_index=True)
-    #     .append(get_vib_interest(), ignore_index=True)
-    # )[["bank_issue", "tenor", "unit", "type", "interest"]]
-    # interest_df.to_csv(f"interest/date={run_date}.csv", index=False)
+    run_date = RunDate(datetime.datetime.today())
+    interest_df = (
+        get_vcb_interest()
+        .append(get_pvc_interest(), ignore_index=True)
+        .append(get_bid_interest(), ignore_index=True)
+        .append(get_scb_interest(), ignore_index=True)
+        .append(get_donga_interest(), ignore_index=True)
+        .append(get_nama_interest(), ignore_index=True)
+        .append(get_vib_interest(), ignore_index=True)
+    )[["bank_issue", "tenor", "unit", "type", "from_amount", "to_amount", "interest", 'is_default']]
+    interest_df.to_csv(f"interest/date={run_date}.csv", index=False)
     print("done")
