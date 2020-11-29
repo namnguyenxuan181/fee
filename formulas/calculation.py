@@ -15,8 +15,8 @@ def month_add(origin_day: date, months: int, dim_date: pd.DataFrame = default_di
     origin_day = RunDate(origin_day)
     end_date = origin_day + relativedelta(months=months)
     while (
-        dim_date[dim_date['date'] == int(end_date)]['is_holiday'].values[0]
-        or dim_date[dim_date['date'] == int(end_date)]['is_weekend'].values[0]
+        dim_date[dim_date["date"] == int(end_date)]["is_holiday"].values[0]
+        or dim_date[dim_date["date"] == int(end_date)]["is_weekend"].values[0]
     ):
         end_date += relativedelta(days=1)
     return end_date.to_date()
@@ -24,16 +24,16 @@ def month_add(origin_day: date, months: int, dim_date: pd.DataFrame = default_di
 
 class Calculation:
     def __init__(
-            self,
-            bank_name: str,
-            created_date: date,
-            maturity: date,
-            interest_rates: Dict[int, float],
-            term: int,
-            origin_amount: int,
-            current_date: date,
-            interest_type: int,
-            default_interest_rate_info: pd.DataFrame,
+        self,
+        bank_name: str,
+        created_date: date,
+        maturity: date,
+        interest_rates: Dict[int, float],
+        term: int,
+        origin_amount: int,
+        current_date: date,
+        interest_type: int,
+        default_interest_rate_info: pd.DataFrame,
     ):
         self.bank_name = bank_name
         self.created_date = created_date
@@ -65,13 +65,11 @@ class Calculation:
     def fill_in_interest_rates(self, default_interest_rate_info: pd.DataFrame):
         for i in range(0, self.number_pass_term + 1):
             if i not in self.interest_rates:
-                self.interest_rates[i] = (
-                    default_interest_rate_info[
-                        (default_interest_rate_info['bank_name'] == self.bank_name)
-                        & (default_interest_rate_info['date'] == self.begin_of_terms[i])
-                        & (default_interest_rate_info['term'] == self.term)
-                    ]['interest_rate'].values[0]
-                )
+                self.interest_rates[i] = default_interest_rate_info[
+                    (default_interest_rate_info["bank_name"] == self.bank_name)
+                    & (default_interest_rate_info["date"] == self.begin_of_terms[i])
+                    & (default_interest_rate_info["term"] == self.term)
+                ]["interest_rate"].values[0]
 
     @property
     def days_of_last_year(self):
@@ -90,10 +88,11 @@ class Calculation:
         if self.interest_type == 2:
             current_origin_amount = self.origin_amount
             for i in range(0, self.number_pass_term):
-                current_origin_amount = (
-                        current_origin_amount *
-                        (1 + self.interest_rates[i] * (self.maturity_dates[i] - self.begin_of_terms[i]).days /
-                         self.days_of_year[i])
+                current_origin_amount = current_origin_amount * (
+                    1
+                    + self.interest_rates[i]
+                    * (self.maturity_dates[i] - self.begin_of_terms[i]).days
+                    / self.days_of_year[i]
                 )
             return current_origin_amount
         else:
@@ -101,32 +100,29 @@ class Calculation:
 
     @property
     def maturity_amount(self):
-        return (
-                self.current_origin_amount *
-                (1 + self.interest_rates[self.number_pass_term] *
-                 (self.maturity_dates[self.number_pass_term] - self.begin_of_terms[self.number_pass_term]).days /
-                 self.days_of_last_year)
+        return self.current_origin_amount * (
+            1
+            + self.interest_rates[self.number_pass_term]
+            * (self.maturity_dates[self.number_pass_term] - self.begin_of_terms[self.number_pass_term]).days
+            / self.days_of_last_year
         )
 
     @property
     def accrued_interest(self):
-        return (
-                self.current_origin_amount * (self.interest_rates[self.number_pass_term] *
-                                              self.days_since_begin_of_last_term / self.days_of_last_year)
+        return self.current_origin_amount * (
+            self.interest_rates[self.number_pass_term] * self.days_since_begin_of_last_term / self.days_of_last_year
         )
 
     @property
     def seller_received_amount(self):
-        return (
-                self.current_origin_amount *
-                (1 + self.seller_interest_rate * self.days_since_begin_of_last_term / self.days_of_last_year)
+        return self.current_origin_amount * (
+            1 + self.seller_interest_rate * self.days_since_begin_of_last_term / self.days_of_last_year
         )
 
     @property
     def buyer_payment_amount(self):
-        return (
-                self.maturity_amount /
-                (1 + self.buyer_interest_rate * self.days_to_next_maturity / self.days_of_last_year)
+        return self.maturity_amount / (
+            1 + self.buyer_interest_rate * self.days_to_next_maturity / self.days_of_last_year
         )
 
     @property
@@ -138,11 +134,11 @@ class Calculation:
         return self.difference_amount / self.current_origin_amount
 
     def compute_sell_and_buy_interest_info(
-            self,
-            difference_interest_rate: float,
-            bank_transaction_fee: int,
-            seller_interest_rate: float = None,
-            buyer_interest_rate: float = None,
+        self,
+        difference_interest_rate: float,
+        bank_transaction_fee: int,
+        seller_interest_rate: float = None,
+        buyer_interest_rate: float = None,
     ):
         d = difference_interest_rate + bank_transaction_fee / self.current_origin_amount
         n_days = self.days_of_year[self.number_pass_term]
