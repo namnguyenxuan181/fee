@@ -1,179 +1,133 @@
 import requests
-import json
-
-origin = 'https://shopmen01.pos365.vn'
-referer = 'https://shopmen01.pos365.vn/'
-Content_Type = 'application/json; charset=UTF-8'
-accept = 'application/json, text/javascript, */*; q=0.01'
-
-body = '{"format":"HTML5Interactive","deviceInfo":{"enableSearch":true,"ContentOnly":true,"UseSVG":true,"BasePath":"https://reporting.pos365.vn/api/reports"},"useCache":false}'
-client = requests.post(
-    'https://reporting.pos365.vn/api/reports/clients',
-    headers={
-        'origin': origin,
-        'referer': referer,
-        'accept': accept,
-        'Content-Type': Content_Type,
-    },
-    # json={"timeStamp": 1608570470626},
-).json()['clientId']
-print(client)
-
-data01 = {"report": "RevenueDetailForRestaurantReport",
-          "parameterValues":
-              {
-                  "filter": "{\"TimeRange\":\"7days\",\"Report\":\"RevenueDetailForRestaurantReport\",\"RID\":\"Y2rL0/liws4=\",\"BID\":\"lmB6dGQ+VUA=\",\"CurrentUserId\":172756}",
-                      # {
-              #         "TimeRange": "7days",
-              #         "Report": "RevenueDetailForRestaurantReport",
-              #         "RID": "Y2rL0/liws4=",
-              #         "BID": "lmB6dGQ+VUA=",
-              #         "CurrentUserId": 172756,
-                  }
-              # }
-          }
-param = requests.post(
-    f'https://reporting.pos365.vn/api/reports/clients/1d8a56c6dd9/parameters',
-    headers={
-        'origin': origin,
-        'referer': referer,
-        'accept': accept,
-        'Content-Type': Content_Type,
-    },
-    json=data01,
-
-)
-print(param)
-print(param.text)
-# body = '{"report":"RevenueDetailForRestaurantReport","parameterValues":{"filter":"{\"TimeRange\":\"7days\",\"Report\":\"RevenueDetailForRestaurantReport\",\"RID\":\"Y2rL0/liws4=\",\"BID\":\"lmB6dGQ+VUA=\",\"CurrentUserId\":172756}"}}'
-#
-data = {
-    "report": 'RevenueDetailForRestaurantReport',
-    'CurrentUserId': '172756',
-    'parameterValues': {
-        'filter': "{\"TimeRange\":\"7days\",\"Report\":\"RevenueDetailForRestaurantReport\",\"RID\":\"Y2rL0/liws4=\",\"BID\":\"lmB6dGQ+VUA=\",\"CurrentUserId\":172756}"
-    }
-}
-instances = requests.post(
-    f'https://reporting.pos365.vn/api/reports/clients/{client}/instances',
-    headers={
-        'origin': 'https://shopmen01.pos365.vn',
-        'referer': 'https://shopmen01.pos365.vn/',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-    },
-    json=data
-).json()['instanceId']
-print(instances)
-
-#
-# body='{"format":"HTML5Interactive","deviceInfo":{"enableSearch":true,"ContentOnly":true,"UseSVG":true,"BasePath":"https://reporting.pos365.vn/api/reports"},"useCache":false}'
-data = {
-    'format': 'HTML5Interactive',
-    'deviceInfo': {
-        'enableSearch': True,
-        'ContentOnly': True,
-        'UseSVG': True,
-        'BasePath': 'https://reporting.pos365.vn/api/reports',
-
-    },
-    'useCache': False
-}
-document = requests.post(
-    f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents',
-
-    headers={
-        'origin': 'https://shopmen01.pos365.vn',
-        'referer': 'https://shopmen01.pos365.vn/',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-    },
-    json=data
-).json()['documentId']
-print(document)
 import time
+from shop_config import config
 
-print(requests.get(
-    f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{document}/info').json()[
-          'documentReady'])
-while (requests.get(
-        f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{document}/info').json()[
-           'documentReady'] is not True):
-    print(requests.get(
-        f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{document}/info').json()[
-              'documentReady'])
-    time.sleep(500)
-data2 = {
-    "format": "XLS",
-    "deviceInfo": {
-        "enableSearch": True,
-        "BasePath": "https://reporting.pos365.vn/api/reports"
-    },
-    "useCache": True,
-    "baseDocumentID": document,
-}
-print(data2)
 
-final_doc_id = requests.post(
-    f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents',
+class SaleOrderCrawler:
+    def __init__(self):
+        self.base_url = 'https://reporting.pos365.vn/api/reports'
+        self.headers = {
+            'origin': f'https://{config["shop_name"]}.pos365.vn',
+            'referer': f'https://{config["shop_name"]}.pos365.vn/',
+            'accept': 'application/json, text/javascript, */*; q=0.01',
+            'Content-Type': 'application/json; charset=UTF-8',
+        }
 
-    headers={
-        'origin': 'https://shopmen01.pos365.vn',
-        'referer': 'https://shopmen01.pos365.vn/',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-    },
-    json=data2
-).json()['documentId']
-page = requests.get(
-    f'https://reporting.pos365.vn//api/reports/clients/{client}/instances/{instances}/documents/{document}/pages/1',
-    headers={
-        'origin': 'https://shopmen01.pos365.vn',
-        'referer': 'https://shopmen01.pos365.vn/',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-    },
-)
-print(f'https://reporting.pos365.vn//api/reports/clients/{client}/instances/{instances}/documents/{document}/pages/1')
-print(page.text)
-option = requests.options(
-    f'https://reporting.pos365.vn//api/reports/clients/{client}/instances/{instances}/documents/{document}',
-    headers={
-        'origin': 'https://shopmen01.pos365.vn',
-        'referer': 'https://shopmen01.pos365.vn/',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-    },
-)
-print(option.text)
-while (requests.get(
-        f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{final_doc_id}/info').json()[
-           'documentReady'] is not True):
-    print(requests.get(
-        f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{final_doc_id}/info').json()[
-              'documentReady'])
-    time.sleep(5000)
-print(document)
-print(final_doc_id)
-print(
-    f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{final_doc_id}?response-content-disposition=attachment')
-# url = 'https://reporting.pos365.vn/api/reports/clients/2ff4e99d3e6/instances/8a277080128/documents/988275f78980fc9f0a6f86?response-content-disposition=attachment'
-doc = requests.get(
-    # 'https://reporting.pos365.vn/api/reports/clients/cb2b75430fe/instances/8a277080128/documents/90063346248557ed0de18a?response-content-disposition=attachment',
-    f'https://reporting.pos365.vn/api/reports/clients/{client}/instances/{instances}/documents/{final_doc_id}?response-content-disposition=attachment',
-    headers={
-        'origin': 'https://shopmen01.pos365.vn',
-        'referer': 'https://shopmen01.pos365.vn/',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    },
-)
-print(doc)
-print(doc.text)
+    def get_client(self) -> str:
+        return requests.post(
+            'https://reporting.pos365.vn/api/reports/clients',
+            headers=self.headers
+        ).json()['clientId']
 
-with open("my_file.xlsx", 'wb') as f:
-    f.write(doc.content)
+    def get_instances(self, client: str) -> str:
+        data = {
+            "report": config['report'],
+            'parameterValues': {
+                'filter': "{\"TimeRange\":\"%s\",\"Report\":\"%s\",\"SoldBy\":0,\"RID\":\"%s\",\"BID\":\"%s\",\"CurrentUserId\":%s}" \
+                          % (config['time_range'], config['report'], config['RID'], config['BID'], config['CurrentUserId'])
+            }
+        }
+        print(data)
+
+        return requests.post(
+            f'{self.base_url}/clients/{client}/instances',
+            headers=self.headers,
+            json=data
+        ).json()['instanceId']
+
+    def set_param(self, client: str):
+
+        data = {
+            "report": config['report'],
+            'parameterValues': {
+                'filter': "{\"TimeRange\":\"%s\",\"Report\":\"%s\",\"SoldBy\":0,\"RID\":\"%s\",\"BID\":\"%s\",\"CurrentUserId\":%s}" \
+                          % (config['time_range'], config['report'], config['RID'], config['BID'], config['CurrentUserId'])
+            }
+        }
+        param = requests.post(
+            f'{self.base_url}/clients/{client}/parameters',
+            headers=self.headers,
+            json=data,
+
+        )
+        print('param', param.json())
+
+    def get_base_document(self, client: str, instance: str) -> str:
+        data = {
+            'format': 'HTML5Interactive',
+            'deviceInfo': {
+                'enableSearch': True,
+                'ContentOnly': True,
+                'UseSVG': True,
+                'BasePath': self.base_url,
+            },
+            'useCache': False
+        }
+
+        return requests.post(
+            f'{self.base_url}/clients/{client}/instances/{instance}/documents',
+            headers=self.headers,
+            json=data,
+        ).json()['documentId']
+
+    def confirm_document_ready(self, client: str, instance: str, document: str):
+        while (
+            requests.get(
+                f'{self.base_url}/clients/{client}/instances/{instance}/documents/{document}/info'
+            ).json()['documentReady'] is not True
+        ):
+            print(requests.get(
+                f'{self.base_url}/clients/{client}/instances/{instance}/documents/{document}/info').json()['documentReady'])
+            time.sleep(100)
+
+    def get_document(self,  client: str, instance: str, base_document: str) -> str:
+        data = {
+            "format": "XLS",
+            "deviceInfo": {
+                "enableSearch": True,
+                "BasePath": self.base_url
+            },
+            "useCache": True,
+            "baseDocumentID": base_document,
+        }
+
+        doc_id = requests.post(
+            f'{self.base_url}/clients/{client}/instances/{instance}/documents',
+            headers=self.headers,
+            json=data
+        ).json()['documentId']
+
+        return doc_id
+
+    def download_data(self, client: str, instance: str, document: str):
+        report = requests.get(
+            f'{self.base_url}/clients/{client}/instances/{instance}/documents/{document}?response-content-disposition=attachment',
+            headers={
+                'origin': f'https://{config["shop_name"]}.pos365.vn',
+                'referer': f'https://{config["shop_name"]}.pos365.vn/',
+                'Content-Type': 'application/json; charset=UTF-8',
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            },
+        )
+        with open(f"report.xlsx", 'wb') as f:
+            f.write(report.content)
+
+    def run(self):
+        print(self.headers)
+        print(config)
+        client = self.get_client()
+        print(f'client: {client}')
+        self.set_param(client)
+        instance = self.get_instances(client=client)
+        print(f'instance: {instance}')
+        base_document = self.get_base_document(client=client, instance=instance)
+        print(f'base_document: {base_document}')
+        self.confirm_document_ready(client, instance, base_document)
+        document = self.get_document(client, instance, base_document)
+        print(f'document: {document}')
+        self.confirm_document_ready(client, instance, document)
+        self.download_data(client=client, instance=instance, document=document)
+
+
+if __name__ == '__main__':
+    SaleOrderCrawler().run()
