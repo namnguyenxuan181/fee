@@ -2,7 +2,7 @@ import requests
 from shop_config import config
 
 def login():
-    data={
+    data = {
         'Username': '0982906045',
         'Password': '123',
         'loginsButton': 'Dashboard',
@@ -39,7 +39,7 @@ def download_dispose_report():
 
     # requests.api
     print(report.headers)
-    with open(f"History.xlsx", 'wb') as f:
+    with open(f"raw_dispose.xlsx", 'wb') as f:
         f.write(report.content)
 
 
