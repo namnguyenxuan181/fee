@@ -58,11 +58,11 @@ def detect_fraud(spark: SparkSession):
 
     excel_output = BytesIO()
     print(new_fraud_dispose)
-    with pd.ExcelWriter(excel_output) as writer:
-        if len(new_fraud_dispose) > 0 or len(new_fraud_sale_order) > 0:
+    if len(new_fraud_dispose) > 0 or len(new_fraud_sale_order) > 0:
+        with pd.ExcelWriter(excel_output) as writer:
             new_fraud_dispose.to_excel(writer, sheet_name='dispose')
             new_fraud_sale_order.to_excel(writer, sheet_name='sale_order')
-    send_email(excel_output, 'fraud_report.xlsx')
+        send_email(excel_output, 'fraud_report.xlsx')
 
     fraud_dispose.toPandas().to_excel('existing_fraud_dispose.xlsx', index=False)
     fraud_sale_order.toPandas().to_excel('existing_fraud_sale_order.xlsx', index=False)
