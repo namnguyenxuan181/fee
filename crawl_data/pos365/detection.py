@@ -1,6 +1,8 @@
+from datetime import datetime
 from io import BytesIO
 
 import pandas as pd
+import xlrd
 from pyspark.sql import SparkSession
 from send_email import send_email
 
@@ -24,6 +26,10 @@ def clean(row: str):
     return None
 
 
+def convert_time(row):
+    return datetime(*xlrd.xldate_as_tuple(row, 0))
+
+
 def detect_order_fraud(df: pd.DataFrame) -> pd.DataFrame:
     thungan_list = ['thungan', 'Admin']
     select_cols = ['order_code', 'tran_at', 'employee', 'discount', 'amount']
@@ -33,7 +39,7 @@ def detect_order_fraud(df: pd.DataFrame) -> pd.DataFrame:
 def detect_dispose_fraud(df: pd.DataFrame) -> pd.DataFrame:
     def detect(employee, product):
         booking_sub = 'booking'
-        if employee not in product and booking_sub in product:
+        if (employee not in product) and (booking_sub in product):
             return True
         return False
     select_cols = ['tran_at', 'employee', 'product', 'reason']
@@ -45,27 +51,26 @@ def detect_fraud(spark: SparkSession):
     raw_sale_order = pd.read_excel('raw_sale_order.xlsx', names=INPUT_COLS)
     raw_sale_order['tran_at'] = raw_sale_order['tran_at'].apply(clean)
     cleaned_sale_order = raw_sale_order[(raw_sale_order.tran_at > '0') & (raw_sale_order.employee > '0')]
-    raw_dispose = pd.read_excel('raw_dispose.xlsx').rename(columns=DISPOSE_MAPPING)
-
+    raw_dispose = pd.read_excel('raw_dispose.xlsx').rename(columns=DISPOSE_MAPPING).astype({'employee': 'str'})
     existing_fraud_dispose = spark.createDataFrame(pd.read_excel('existing_fraud_dispose.xlsx'))
     existing_fraud_sale_order = spark.createDataFrame(pd.read_excel('existing_fraud_sale_order.xlsx'))
-    fraud_dispose = spark.createDataFrame(detect_dispose_fraud(raw_dispose))
+    fraud_dispose = detect_dispose_fraud(raw_dispose)
+    fraud_dispose['tran_at'] = fraud_dispose['tran_at'].apply(convert_time)
+    fraud_dispose = spark.createDataFrame(fraud_dispose)
     fraud_sale_order = spark.createDataFrame(detect_order_fraud(cleaned_sale_order))
 
     new_fraud_dispose = fraud_dispose.subtract(existing_fraud_dispose).toPandas()
 
     new_fraud_sale_order = fraud_sale_order.subtract(existing_fraud_sale_order).toPandas()
 
-    excel_output = BytesIO()
     print(new_fraud_dispose)
     if len(new_fraud_dispose) > 0 or len(new_fraud_sale_order) > 0:
-        with pd.ExcelWriter(excel_output) as writer:
-            new_fraud_dispose.to_excel(writer, sheet_name='dispose')
-            new_fraud_sale_order.to_excel(writer, sheet_name='sale_order')
-        send_email(excel_output, 'fraud_report.xlsx')
-
-    fraud_dispose.toPandas().to_excel('existing_fraud_dispose.xlsx', index=False)
-    fraud_sale_order.toPandas().to_excel('existing_fraud_sale_order.xlsx', index=False)
+        send_email(
+            new_fraud_dispose[['employee', 'product', 'reason']],
+            new_fraud_sale_order
+        )
+        fraud_dispose.toPandas().to_excel('existing_fraud_dispose.xlsx', index=False)
+        fraud_sale_order.toPandas().to_excel('existing_fraud_sale_order.xlsx', index=False)
 
 
 if __name__ == '__main__':

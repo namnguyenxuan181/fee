@@ -15,7 +15,7 @@ config = {
     'CurrentUserId': 176193,
     'report': Report.ORDER_REPORT,
     'time_range': TimeRange.TIME_RANGE_7DAYS,
-    'report_duration': 60*15,
+    'report_duration': 60*1,
 }
 
 email_config = {
