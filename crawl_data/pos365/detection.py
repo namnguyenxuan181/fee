@@ -37,12 +37,14 @@ def detect_order_fraud(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def detect_dispose_fraud(df: pd.DataFrame) -> pd.DataFrame:
-    def detect(employee, product):
-        booking_sub = 'booking'
-        if (employee not in product) and (booking_sub in product):
+    def detect(employee: str, product: str):
+        cashier = 'cashier'
+        admin = 'admin'
+        if (employee != product) or (cashier not in employee) or (admin not in employee.lower()):
             return True
         return False
     select_cols = ['tran_at', 'employee', 'product', 'reason']
+    print(df)
     df['is_fraud'] = df.apply(lambda x: detect(x['employee'], x['product']), axis=1)
     return df[df.is_fraud == True][select_cols]
 
@@ -64,9 +66,10 @@ def detect_fraud(spark: SparkSession):
     new_fraud_sale_order = fraud_sale_order.subtract(existing_fraud_sale_order).toPandas()
 
     print(new_fraud_dispose)
+    print(new_fraud_sale_order)
     if len(new_fraud_dispose) > 0 or len(new_fraud_sale_order) > 0:
         send_email(
-            new_fraud_dispose[['employee', 'product', 'reason']],
+            new_fraud_dispose,
             new_fraud_sale_order
         )
         fraud_dispose.toPandas().to_excel('existing_fraud_dispose.xlsx', index=False)

@@ -1,14 +1,14 @@
 import requests
 import time
-from shop_config import config
+from shop_config import shop_config
 
 
 class SaleOrderCrawler:
     def __init__(self):
         self.base_url = 'https://reporting.pos365.vn/api/reports'
         self.headers = {
-            'origin': f'https://{config["shop_name"]}.pos365.vn',
-            'referer': f'https://{config["shop_name"]}.pos365.vn/',
+            'origin': f'https://{shop_config["shop_name"]}.pos365.vn',
+            'referer': f'https://{shop_config["shop_name"]}.pos365.vn/',
             'accept': 'application/json, text/javascript, */*; q=0.01',
             'Content-Type': 'application/json; charset=UTF-8',
         }
@@ -21,10 +21,10 @@ class SaleOrderCrawler:
 
     def get_instances(self, client: str) -> str:
         data = {
-            "report": config['report'],
+            "report": shop_config['report'],
             'parameterValues': {
                 'filter': "{\"TimeRange\":\"%s\",\"Report\":\"%s\",\"SoldBy\":0,\"RID\":\"%s\",\"BID\":\"%s\",\"CurrentUserId\":%s}" \
-                          % (config['time_range'], config['report'], config['RID'], config['BID'], config['CurrentUserId'])
+                          % (shop_config['time_range'], shop_config['report'], shop_config['RID'], shop_config['BID'], shop_config['CurrentUserId'])
             }
         }
         print(data)
@@ -38,10 +38,10 @@ class SaleOrderCrawler:
     def set_param(self, client: str):
 
         data = {
-            "report": config['report'],
+            "report": shop_config['report'],
             'parameterValues': {
                 'filter': "{\"TimeRange\":\"%s\",\"Report\":\"%s\",\"SoldBy\":0,\"RID\":\"%s\",\"BID\":\"%s\",\"CurrentUserId\":%s}" \
-                          % (config['time_range'], config['report'], config['RID'], config['BID'], config['CurrentUserId'])
+                          % (shop_config['time_range'], shop_config['report'], shop_config['RID'], shop_config['BID'], shop_config['CurrentUserId'])
             }
         }
         param = requests.post(
@@ -103,8 +103,8 @@ class SaleOrderCrawler:
         report = requests.get(
             f'{self.base_url}/clients/{client}/instances/{instance}/documents/{document}?response-content-disposition=attachment',
             headers={
-                'origin': f'https://{config["shop_name"]}.pos365.vn',
-                'referer': f'https://{config["shop_name"]}.pos365.vn/',
+                'origin': f'https://{shop_config["shop_name"]}.pos365.vn',
+                'referer': f'https://{shop_config["shop_name"]}.pos365.vn/',
                 'Content-Type': 'application/json; charset=UTF-8',
                 'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
             },
@@ -114,7 +114,7 @@ class SaleOrderCrawler:
 
     def run(self):
         print(self.headers)
-        print(config)
+        print(shop_config)
         client = self.get_client()
         print(f'client: {client}')
         self.set_param(client)

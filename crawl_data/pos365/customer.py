@@ -1,9 +1,10 @@
 import requests
 from shop_config import shop_config, shop_cookie
 
-def download_dispose_report():
-    report = requests.get(
-        f'https://{shop_config["shop_name"]}.pos365.vn/Export/RoomHistory?time=7days',
+
+def download_customer():
+    customer = requests.get(
+        f'https://{shop_config["shop_name"]}.pos365.vn/Export/Customers',
         headers={
             'origin': f'https://{shop_config["shop_name"]}.pos365.vn',
             'referer': f'https://{shop_config["shop_name"]}.pos365.vn/',
@@ -13,12 +14,11 @@ def download_dispose_report():
         cookies=shop_cookie
     )
 
-    # requests.api
-    print(report.headers)
-    with open(f"raw_dispose.xlsx", 'wb') as f:
-        f.write(report.content)
+    print(customer.headers)
+    with open(f"raw_customer.xlsx", 'wb') as f:
+        f.write(customer.content)
 
 
 if __name__ == '__main__':
-    download_dispose_report()
+    download_customer()
 
