@@ -1,5 +1,9 @@
+from datetime import date
+
 import requests
 from shop_config import shop_config, shop_cookie
+from run_date import RunDate
+
 
 def download_dispose_report():
     report = requests.get(
@@ -15,7 +19,8 @@ def download_dispose_report():
 
     # requests.api
     print(report.headers)
-    with open(f"raw_dispose.xlsx", 'wb') as f:
+    run_date = RunDate(date.today())
+    with open(f"dispose/{run_date}.xlsx", 'wb') as f:
         f.write(report.content)
 
 

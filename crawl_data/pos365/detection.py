@@ -1,9 +1,10 @@
-from datetime import datetime
-from io import BytesIO
+from datetime import datetime, date
 
 import pandas as pd
 import xlrd
 from pyspark.sql import SparkSession
+
+from run_date import RunDate
 from send_email import send_email
 
 INPUT_COLS = ['_0', 'order_code', '_1', 'tran_at', 'employee', 'table', 'customer_number', '_2', '_3', 'discount', 'amount', '_4', 'debit']
@@ -50,13 +51,15 @@ def detect_dispose_fraud(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def detect_fraud(spark: SparkSession):
+    run_date = RunDate(date.today())
     print('detection fraud')
-    raw_sale_order = pd.read_excel('raw_sale_order.xlsx', names=INPUT_COLS)
+    raw_sale_order = pd.read_excel(f'sale_order/{run_date}.xlsx', names=INPUT_COLS)
     raw_sale_order['tran_at'] = raw_sale_order['tran_at'].apply(clean)
-    cleaned_sale_order = raw_sale_order[(raw_sale_order.tran_at > '0') & (raw_sale_order.employee > '0')]
-    raw_dispose = pd.read_excel('raw_dispose.xlsx').rename(columns=DISPOSE_MAPPING).astype({'employee': 'str'})
-    existing_fraud_dispose = spark.createDataFrame(pd.read_excel('existing_fraud_dispose.xlsx'))
-    existing_fraud_sale_order = spark.createDataFrame(pd.read_excel('existing_fraud_sale_order.xlsx'))
+    cleaned_sale_order = raw_sale_order[(raw_sale_order.tran_at > '0') & (raw_sale_order.employee > '0')].astype({'employee': 'str'})
+
+    raw_dispose = pd.read_excel(f'dispose/{run_date}.xlsx').rename(columns=DISPOSE_MAPPING).astype({'employee': 'str'})
+    existing_fraud_dispose = spark.createDataFrame(pd.read_excel('report/existing_fraud_dispose.xlsx'))
+    existing_fraud_sale_order = spark.createDataFrame(pd.read_excel('report/existing_fraud_sale_order.xlsx'))
     fraud_dispose = detect_dispose_fraud(raw_dispose)
     fraud_dispose['tran_at'] = fraud_dispose['tran_at'].apply(convert_time)
     fraud_dispose = spark.createDataFrame(fraud_dispose)
@@ -75,6 +78,8 @@ def detect_fraud(spark: SparkSession):
         )
         fraud_dispose.toPandas().to_excel('existing_fraud_dispose.xlsx', index=False)
         fraud_sale_order.toPandas().to_excel('existing_fraud_sale_order.xlsx', index=False)
+    else:
+        print("don't have any fraud data")
 
 
 if __name__ == '__main__':

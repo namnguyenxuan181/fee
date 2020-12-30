@@ -2,11 +2,13 @@ from datetime import date
 
 import requests
 import time
-from shop_config import shop_config
+from shop_config import shop_config, Report
 from run_date import RunDate
 
+shop_config['report'] = Report.ORDER_DETAIL_REPORT
 
-class SaleOrderCrawler:
+
+class SaleOrderDetailCrawler:
     def __init__(self):
         self.base_url = 'https://reporting.pos365.vn/api/reports'
         self.headers = {
@@ -113,7 +115,7 @@ class SaleOrderCrawler:
             },
         )
         run_date = RunDate(date.today())
-        with open(f"sale_order/{run_date}.xlsx", 'wb') as f:
+        with open(f"sale_order_detail/{run_date}.xlsx", 'wb') as f:
             f.write(report.content)
 
     def run(self):
@@ -134,4 +136,4 @@ class SaleOrderCrawler:
 
 
 if __name__ == '__main__':
-    SaleOrderCrawler().run()
+    SaleOrderDetailCrawler().run()
