@@ -50,6 +50,7 @@ def detect_dispose_fraud(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def detect_fraud(spark: SparkSession):
+    print('detection fraud')
     raw_sale_order = pd.read_excel('raw_sale_order.xlsx', names=INPUT_COLS)
     raw_sale_order['tran_at'] = raw_sale_order['tran_at'].apply(clean)
     cleaned_sale_order = raw_sale_order[(raw_sale_order.tran_at > '0') & (raw_sale_order.employee > '0')]

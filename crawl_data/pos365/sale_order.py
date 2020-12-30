@@ -78,7 +78,7 @@ class SaleOrderCrawler:
         ):
             print(requests.get(
                 f'{self.base_url}/clients/{client}/instances/{instance}/documents/{document}/info').json()['documentReady'])
-            time.sleep(100)
+            time.sleep(1)
 
     def get_document(self,  client: str, instance: str, base_document: str) -> str:
         data = {
