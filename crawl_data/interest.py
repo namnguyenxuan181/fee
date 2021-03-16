@@ -186,6 +186,21 @@ def get_nama_interest():
     return nama_interest_df
 
 
+def get_agribank_interest():
+    print('get agribank interest')
+    agri_interest_table = get_interest_from_table("https://www.agribank.com.vn/vn/lai-suat")
+    agri_interest_df = pd.DataFrame(agri_interest_table[2:18], columns=['tenor', 'interest', '_1', '_2'])[
+        ["tenor", "interest"]
+    ]
+    agri_interest_df["tenor"], agri_interest_df["unit"] = zip(*agri_interest_df["tenor"].apply(tenor_cleaner))
+    agri_interest_df["interest"] = agri_interest_df["interest"].apply(interest_cleaner)
+    agri_interest_df["bank_issue"], agri_interest_df["type"] = "agribank", "offline"
+    agri_interest_df['from_amount'], agri_interest_df['to_amount'] = add_from_amount_to_amount()
+    agri_interest_df['is_default'] = True
+
+    return agri_interest_df
+
+
 def get_vib_interest():
     print('get vib interest')
     spark = SparkSession.builder.getOrCreate()
@@ -227,6 +242,7 @@ if __name__ == "__main__":
         .append(get_bid_interest(), ignore_index=True)
         .append(get_scb_interest(), ignore_index=True)
         # .append(get_donga_interest(), ignore_index=True)
+        .append(get_agribank_interest(), ignore_index=True)
         .append(get_nama_interest(), ignore_index=True)
         .append(get_vib_interest(), ignore_index=True)
     )[["bank_issue", "tenor", "unit", "type", "from_amount", "to_amount", "interest", 'is_default']]
