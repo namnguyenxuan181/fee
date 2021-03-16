@@ -51,10 +51,11 @@ def tenor_cleaner(row: str) -> (int, str):
 
 
 def add_from_amount_to_amount():
-    return 0, 99999999999999999
+    return 0, 10e18-1
 
 
 def get_vcb_interest():
+    print('get vcb interest')
     vcb_url = "https://portal.vietcombank.com.vn/UserControls/TVPortal.TyGia/pListLaiSuat.aspx?CusstomType=1&BacrhID=1&InrateType=&isEn=False&numAfter=2"
     vcb_interest = get_interest_from_table(vcb_url)
     vcb_tiet_kiem = [i[:2] for i in vcb_interest[2:13]]
@@ -69,6 +70,7 @@ def get_vcb_interest():
 
 # PVCOM BANK
 def get_pvc_interest():
+    print('get pvc interest')
     res = requests.get("https://www.pvcombank.com.vn//api/interest-rate")
     pvc_interest_table = pd.DataFrame(res.json())
     pvc_interest_table = pvc_interest_table.fillna(0).astype({"INTERESTE": "int64"})
@@ -95,6 +97,7 @@ def get_pvc_interest():
 
 # SCB
 def get_scb_interest():
+    print('get scb interest')
     scb_offline_url = "https://www.scb.com.vn/vie/detaillist/qa_interestrate_detail/QA_INTERESTRATE_SAVING_PHATLOCTAI/0"
     scb_online_url = (
         "https://www.scb.com.vn/vie/detaillist/qa_interestrate_detail/QA_INTERESTRATE_ONLINE_DEPOSIT/0"  # online
@@ -131,6 +134,7 @@ def get_scb_interest():
 
 # BIDV
 def get_bid_interest():
+    print('get bidv interest')
     bidv_url = "https://www.bidv.com.vn//ServicesBIDV/InterestDetailServlet"
     bidv_res = requests.post(bidv_url)
     bidv_interest = pd.DataFrame(bidv_res.json()["hanoi"]["data"])
@@ -150,6 +154,7 @@ def get_bid_interest():
 
 # dong a
 def get_donga_interest():
+    print('get dong a interest')
     donga_interest_table = get_interest_from_table(
         "https://kinhdoanh.dongabank.com.vn/widget/temp/-/DTSCDongaBankIView_WAR_DTSCDongaBankIERateportlet?type=tktt-vnd"
     )
@@ -167,6 +172,7 @@ def get_donga_interest():
 
 # nam a
 def get_nama_interest():
+    print('get nam a interest')
     nama_interest_table = get_interest_from_table("https://www.namabank.com.vn//lai-suat-tien-gui-vnd-nam")
     nama_interest_df = pd.DataFrame(nama_interest_table[3:], columns=["tenor", "interest", "_1", "_2", "_3", "_4"])[
         ["tenor", "interest"]
@@ -181,6 +187,7 @@ def get_nama_interest():
 
 
 def get_vib_interest():
+    print('get vib interest')
     spark = SparkSession.builder.getOrCreate()
     res = requests.post("https://www.vib.com.vn//VIBOpenCA/html/jsp/info/new_getSavingRateFromCore.jsp")
     vib_interest_table = pd.DataFrame(res.json())
@@ -219,7 +226,7 @@ if __name__ == "__main__":
         .append(get_pvc_interest(), ignore_index=True)
         .append(get_bid_interest(), ignore_index=True)
         .append(get_scb_interest(), ignore_index=True)
-        .append(get_donga_interest(), ignore_index=True)
+        # .append(get_donga_interest(), ignore_index=True)
         .append(get_nama_interest(), ignore_index=True)
         .append(get_vib_interest(), ignore_index=True)
     )[["bank_issue", "tenor", "unit", "type", "from_amount", "to_amount", "interest", 'is_default']]
